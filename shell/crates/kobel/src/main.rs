@@ -3,33 +3,20 @@ mod widget;
 mod panel;
 mod state;
 
-use chrono::{DateTime, Local, TimeDelta, Utc};
+use chrono::{DateTime, Local};
 
-use iced::alignment::Vertical;
 use iced::daemon::Appearance;
-use iced::font::Family;
-use iced::futures::{stream, SinkExt, Stream};
-use iced::platform_specific::runtime::wayland::layer_surface::SctkLayerSurfaceSettings;
-use iced::platform_specific::shell::commands::layer_surface::{
-    Anchor, KeyboardInteractivity, Layer, get_layer_surface,
-};
-use iced::runtime::platform_specific::wayland::layer_surface::IcedMargin;
-use iced::theme::Palette;
-use iced::widget::{center, column, container, pick_list, rich_text, row, slider, span, svg, text, tooltip, vertical_rule, Row};
+use iced::widget::row;
 use iced::window::Id;
-use iced::Length::FillPortion;
-use iced::{border, Background, Color, Element, Font, Padding, Radius, Subscription, Task, Theme};
+use iced::{Color, Element, Subscription, Task, Theme};
 
-use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
-use std::thread;
-use std::time::{Duration, Instant};
+use std::sync::{Arc};
+use std::time::{Duration};
 
 use crate::panel::bar::KobelBar;
 use crate::panel::dock::KobelDock;
 use crate::panel::wallpaper::KobelWallpaper;
 use crate::state::KobelShellState;
-use crate::widget::primitives::button;
 
 #[tokio::main]
 pub async fn main() -> iced::Result {

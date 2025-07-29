@@ -114,7 +114,7 @@ impl KobelDock {
                         text(tooltip_text)
                             .font(self.state.font_bold)
                             .size(14)
-                            .color(Color::WHITE),
+                            .color(self.state.shell_text_color),
                     tooltip::Position::FollowCursor
                 )
             );
@@ -155,7 +155,7 @@ impl KobelDock {
                                 crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.05))),
                                 _ => Some(Background::Color(Color::TRANSPARENT)),
                             },
-                            text_color: Color::WHITE,
+                            text_color: self.state.shell_text_color,
                             border: iced::Border {
                                 width: 0.0,
                                 radius: dock_button_radii.into(),
@@ -176,7 +176,7 @@ impl KobelDock {
                                 crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.05))),
                                 _ => Some(Background::Color(Color::TRANSPARENT)),
                             },
-                            text_color: Color::WHITE,
+                            text_color: self.state.shell_text_color,
                             border: iced::Border {
                                 width: 0.0,
                                 radius: dock_button_radii.into(),
@@ -197,7 +197,7 @@ impl KobelDock {
             .align_y(iced::Alignment::Center)
             .style(move |_| container::Style {
                 background: Some(self.state.shell_background.clone()),
-                text_color: Some(Color::WHITE),
+                text_color: Some(self.state.shell_text_color),
                 border: iced::Border {
                     width: 3.0,
                     radius: dock_radii.into(),

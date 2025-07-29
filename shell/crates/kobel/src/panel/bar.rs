@@ -24,7 +24,7 @@ impl KobelBar {
     pub fn new(state: Arc<KobelShellState>) -> (Self, Task<KobelRootMessage>) {
         let id = iced::window::Id::unique();
 
-        let bar_margin: i32 = 2;
+        let bar_margin: i32 = 4;
         let bar_height = BAR_DEFAULT_HEIGHT + (bar_margin * 2);
 
         let surface = get_layer_surface(SctkLayerSurfaceSettings {
@@ -66,7 +66,7 @@ impl KobelBar {
         let time_str = self.state.now
             .read()
             .unwrap()
-            .format("%d %b %H:%M:%S")
+            .format("%d %b  %H:%M:%S")
             .to_string();
 
         let info_str = format!(
@@ -77,10 +77,15 @@ impl KobelBar {
 
         let left_ui = column![
             row![
-                button(container(text("⬤")
-                    .align_y(iced::Alignment::End)
-                    .font(self.state.font_bold)
-                    .size(14)
+                button(container(svg(&self.state.get_resource_path("logo.svg"))
+                    .width(iced::Length::Fixed(16.0))
+                    .height(iced::Length::Fixed(16.0))
+                    .content_fit(iced::ContentFit::Contain)
+                    .symbolic(true)
+                    .style(|_, _| svg::Style {
+                        color: Some(self.state.shell_text_color),
+                        ..Default::default()
+                    })
                 )
                     .align_y(iced::Alignment::Center)
                     .height(iced::Length::Fill)
@@ -94,7 +99,7 @@ impl KobelBar {
                             crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
                             _ => Some(Background::Color(Color::TRANSPARENT)),
                         },
-                        text_color: Color::WHITE,
+                        text_color: self.state.shell_text_color,
                         border: iced::Border {
                             width: 0.0,
                             radius: button_radii.into(),
@@ -131,7 +136,7 @@ impl KobelBar {
                         crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
                         _ => Some(Background::Color(Color::TRANSPARENT)),
                     },
-                    text_color: Color::WHITE,
+                    text_color: self.state.shell_text_color,
                     border: iced::Border {
                         width: 0.0,
                         radius: button_radii.into(),
@@ -159,7 +164,7 @@ impl KobelBar {
                 .content_fit(iced::ContentFit::Contain)
                 .symbolic(true)
                 .style(|_, _| svg::Style {
-                    color: Some(Color::WHITE),
+                    color: Some(self.state.shell_text_color),
                     ..Default::default()
                 })
                 .into())
@@ -192,7 +197,7 @@ impl KobelBar {
                         crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
                         _ => Some(Background::Color(Color::TRANSPARENT)),
                     },
-                    text_color: Color::WHITE,
+                    text_color: self.state.shell_text_color,
                     border: iced::Border {
                         width: 0.0,
                         radius: button_radii.into(),
@@ -218,7 +223,7 @@ impl KobelBar {
                         crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
                         _ => Some(Background::Color(Color::TRANSPARENT)),
                     },
-                    text_color: Color::WHITE,
+                    text_color: self.state.shell_text_color,
                     border: iced::Border {
                         width: 0.0,
                         radius: button_radii.into(),
@@ -244,7 +249,7 @@ impl KobelBar {
                         crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
                         _ => Some(Background::Color(Color::TRANSPARENT)),
                     },
-                    text_color: Color::WHITE,
+                    text_color: self.state.shell_text_color,
                     border: iced::Border {
                         width: 0.0,
                         radius: button_radii.into(),
@@ -266,7 +271,7 @@ impl KobelBar {
                         crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
                         _ => Some(Background::Color(Color::TRANSPARENT)),
                     },
-                    text_color: Color::WHITE,
+                    text_color: self.state.shell_text_color,
                     border: iced::Border {
                         width: 0.0,
                         radius: button_radii.into(),
@@ -296,7 +301,7 @@ impl KobelBar {
             .align_y(iced::Alignment::Center)
             .style(move |_| container::Style {
                 background: Some(self.state.shell_background.clone()),
-                text_color: Some(Color::WHITE),
+                text_color: Some(self.state.shell_text_color),
                 border: iced::Border {
                     width: 0.0,
                     radius: Radius {

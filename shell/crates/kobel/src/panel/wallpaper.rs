@@ -24,6 +24,7 @@ pub struct KobelWallpaper {
 
     wallpaper_opacity: f32,
     wallpaper_handle: Option<iced::widget::image::Handle>,
+    wallpaper_fade_start_time: Option<std::time::Instant>,
 }
 
 impl KobelWallpaper {
@@ -49,6 +50,7 @@ impl KobelWallpaper {
 
                 wallpaper_opacity: 0.0,
                 wallpaper_handle: None,
+                wallpaper_fade_start_time: None,
             },
             Task::batch(vec![
                 surface,
@@ -64,16 +66,37 @@ impl KobelWallpaper {
     }
 
     pub fn update(&mut self, message: KobelRootMessage) -> Task<KobelRootMessage> {
-        if let KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Wallpaper(wallpaper_message)) = message {
+        if let KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Wallpaper(wallpaper_message)) = &message {
             match wallpaper_message {
                 KobelWallpaperMessage::WallpaperLoaded(handle) => {
-                    self.wallpaper_handle = Some(handle);
-                    self.wallpaper_opacity = 1.0; // Start with full opacity
+                    self.wallpaper_handle = Some(handle.clone());
+                    self.wallpaper_fade_start_time = Some(std::time::Instant::now());
+
+                    log::info!("Wallpaper loaded successfully");
                 }
                 KobelWallpaperMessage::WallpaperFailed => {
                     log::error!("Failed to load wallpaper");
                 }
             }
+        }
+
+        match message {
+            KobelRootMessage::Tick(_) => {
+                if self.wallpaper_fade_start_time.is_some() {
+                    let elapsed = self.wallpaper_fade_start_time.unwrap().elapsed().as_secs_f32();
+                    let duration = 1.5;
+
+                    if elapsed > duration {
+                        self.wallpaper_opacity = 1.0;
+                    } else {
+                        let opacity = (elapsed / duration).clamp(0.0_f32, 1.0_f32);
+                        let eased_opacity = easing_function::easings::Linear::ease(opacity);
+    
+                        self.wallpaper_opacity = eased_opacity;
+                    }
+                }
+            }
+            _ => {}
         }
 
         Task::none()
@@ -107,7 +130,7 @@ impl KobelWallpaper {
     async fn load_wallpaper(state: Arc<KobelShellState>) -> anyhow::Result<iced::widget::image::Handle> {
         log::info!("Loading wallpaper...");
                 
-        let path = state.get_resource_path("wallpaper.jpg");
+        let path = state.get_resource_path(&state.shell_wallpaper_name);
         if !path.exists() {
             log::error!("Wallpaper not found: {}", path.display());
             anyhow::bail!("Wallpaper not found");
