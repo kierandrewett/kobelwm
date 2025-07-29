@@ -243,6 +243,9 @@ subdir('man')
 subdir('metadata')
 subdir('plugins')
 
+# Kobel shell
+subdir('shell')
+
 # Unit tests
 doctest = dependency('doctest', required: get_option('tests'))
 if doctest.found()

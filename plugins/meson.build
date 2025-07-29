@@ -56,7 +56,7 @@ plugins = [
   'ipc',
   'protocols',
   'vswitch',
-  'wobbly',
+  # 'wobbly',
   'grid',
   'decor',
   'animate',
