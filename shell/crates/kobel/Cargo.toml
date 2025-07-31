@@ -2,6 +2,7 @@
 name = "kobel"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 iced = { git = "https://github.com/pop-os/iced", default-features = false, features = ["tokio", "wayland", "advanced", "wgpu", "winit", "svg", "image", "debug"] }
@@ -14,3 +15,6 @@ image = "0.25.6"
 anyhow = "1.0.98"
 tokio = { version = "1.47.0", features = ["full"] }
 easing-function = "0.1.1"
+
+[build-dependencies]
+vergen-git2 = { version = "1.0.7", features = ["build", "cargo", "rustc", "si"] }

@@ -14,6 +14,7 @@ use std::sync::{Arc};
 use std::time::{Duration};
 
 use crate::panel::bar::KobelBar;
+use crate::panel::debug::KobelDebug;
 use crate::panel::dock::KobelDock;
 use crate::panel::wallpaper::KobelWallpaper;
 use crate::state::KobelShellState;
@@ -36,6 +37,7 @@ struct App {
     wallpaper: KobelWallpaper,
     bar: KobelBar,
     dock: KobelDock,
+    debug: KobelDebug
 }
 
 #[derive(Debug, Clone)]
@@ -53,6 +55,7 @@ impl App {
         let (wallpaper, wallpaper_task) = KobelWallpaper::new(state.clone());
         let (bar, bar_task) = KobelBar::new(state.clone());
         let (dock, dock_task) = KobelDock::new(state.clone());
+        let (debug, debug_task) = KobelDebug::new(state.clone());
 
         (
             Self {
@@ -61,11 +64,13 @@ impl App {
                 wallpaper,
                 bar,
                 dock,
+                debug
             },
             Task::batch(vec![
                 wallpaper_task,
                 bar_task,
                 dock_task,
+                debug_task,
             ]),
         )
     }
@@ -97,6 +102,7 @@ impl App {
             id if id == self.wallpaper.id => self.wallpaper.view(),
             id if id == self.bar.id => self.bar.view(),
             id if id == self.dock.id => self.dock.view(),
+            id if id == self.debug.id => self.debug.view(),
             _ => {
                 log::warn!("Unknown window ID: {:?}", id);
                 row![].into()

@@ -113,7 +113,7 @@ impl KobelDock {
                         .on_press(KobelRootMessage::Test),
                         text(tooltip_text)
                             .font(self.state.font_bold)
-                            .size(14)
+                            .size(14.6666)
                             .color(self.state.shell_text_color),
                     tooltip::Position::FollowCursor
                 )
@@ -131,21 +131,14 @@ impl KobelDock {
             dock_ui = dock_ui.push(icon_ui);
         }
 
-        dock_ui = dock_ui.push(vertical_rule(1.0)
-            .style(|_| iced::widget::rule::Style {
-                fill_mode: iced::widget::rule::FillMode::Full,
-                color: Color::from_rgba(0.5, 0.5, 0.5, 0.025),
-                width: 1,
-                radius: 0.into(),
-            })
-        );
+        dock_ui = dock_ui.push(vertical_rule(1.0));
 
         dock_ui = dock_ui.push(
             container(
                 column![
                     button(text("Kieran")
                         .font(self.state.font_bold)
-                        .size(14))
+                        .size(14.6666))
                         .width(iced::Length::Shrink)
                         .height(iced::Length::Shrink)
                         .padding(dock_button_icon_padding)
@@ -166,7 +159,7 @@ impl KobelDock {
                         .on_press(KobelRootMessage::Test),
                     button(text("bingus")
                         .font(self.state.font_bold)
-                        .size(14))
+                        .size(14.6666))
                         .width(iced::Length::Shrink)
                         .height(iced::Length::Shrink)
                         .padding(dock_button_icon_padding)
