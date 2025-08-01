@@ -1,13 +1,20 @@
 use std::{path::PathBuf, sync::Arc};
 
-use iced::{core::window, platform_specific::shell::commands::{layer_surface::get_layer_surface, subsurface::{Anchor, KeyboardInteractivity, Layer}}, widget::{column, container, horizontal_rule, row, svg, text, tooltip, vertical_rule}, Background, Color, Element, Shadow, Task};
+use iced::{core::window, platform_specific::shell::commands::{layer_surface::get_layer_surface, subsurface::{Anchor, KeyboardInteractivity, Layer}}, widget::{checkbox, column, container, horizontal_rule, row, slider, svg, text, text_input, tooltip, vertical_rule}, Background, Color, Element, Shadow, Task};
 use iced_runtime::platform_specific::wayland::layer_surface::{IcedMargin, SctkLayerSurfaceSettings};
 
 use crate::{state::KobelShellState, widget::{k_text::k_text, primitives::button}, KobelRootMessage};
 
 #[derive(Debug, Clone)]
 pub enum KobelDebugMessage {
+    Toggle,
+    DebugBorderStyleToggled(bool),
+}
 
+impl Into<KobelRootMessage> for KobelDebugMessage {
+    fn into(self) -> KobelRootMessage {
+        KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Debug(self))
+    }
 }
 
 #[derive(Debug)]
@@ -24,7 +31,7 @@ impl KobelDebug {
             id,
             namespace: "kobelwm".to_string(),
             layer: Layer::Overlay,
-            anchor: Anchor::TOP | Anchor::LEFT,
+            anchor: Anchor::TOP | Anchor::RIGHT,
             size: Some((Some(400), Some(400))),
             margin: IcedMargin {
                 top: 0,
@@ -32,7 +39,7 @@ impl KobelDebug {
                 right: 10,
                 bottom: 10,
             },
-            keyboard_interactivity: KeyboardInteractivity::Exclusive,
+            keyboard_interactivity: KeyboardInteractivity::None,
             pointer_interactivity: true,
             ..Default::default()
         });
@@ -47,10 +54,34 @@ impl KobelDebug {
     }
 
     pub fn update(&mut self, message: KobelRootMessage) -> Task<KobelRootMessage> {
+        match message {
+            KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Debug(debug_message)) => {
+                match debug_message {
+                    KobelDebugMessage::Toggle => {
+                        let is_visible = self.is_visible();
+                    
+                        *self.state.debug_panel_visible.write().unwrap() = !is_visible;
+                    }
+                    KobelDebugMessage::DebugBorderStyleToggled(enabled) => {
+                        *self.state.debug_border_style.write().unwrap() = enabled;
+                    }
+                }
+            }
+            _ => {}
+        }
+
         Task::none()
     }
 
+    pub fn is_visible(&self) -> bool {
+        *self.state.debug_panel_visible.read().unwrap()
+    }
+
     pub fn view(&self) -> Element<KobelRootMessage> {
+        if !self.is_visible() {
+            return row![].into();
+        }
+
         let wm_info = format!(
             "KobelWM v{}",
             env!("CARGO_PKG_VERSION")
@@ -74,6 +105,14 @@ impl KobelDebug {
             horizontal_rule(2.0),
             k_text(&self.state, format!("FPS: {:.2}", self.state.fps.read().unwrap().fps())),
             k_text(&self.state, format!("Now: {}", self.state.now.read().unwrap().format("%Y-%m-%d %H:%M:%S"))),
+            horizontal_rule(2.0),
+            k_text(&self.state, format!("Mouse Position: {:?}", self.state.pointer_position.read().unwrap())),
+            k_text(&self.state, format!("Screen Size: {:?}", self.state.screen_size.read().unwrap())),
+            horizontal_rule(2.0),
+            checkbox("Enable debug borders", *self.state.debug_border_style.read().unwrap())
+                .on_toggle(|enabled| {
+                    KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Debug(KobelDebugMessage::DebugBorderStyleToggled(enabled)))
+                })
         ];
 
         container(container(debug_ui)

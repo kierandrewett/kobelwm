@@ -3,12 +3,13 @@ use std::sync::Arc;
 use iced::{core::{Element, Widget}, platform_specific::shell::commands::{layer_surface::get_layer_surface, subsurface::{Anchor, KeyboardInteractivity, Layer}}, widget::Row, Background, Color, Padding, Radius, Task};
 use iced_runtime::platform_specific::wayland::layer_surface::{IcedMargin, SctkLayerSurfaceSettings};
 use iced::widget::{container, row, column, text, svg};
-use crate::{widget::{k_button::k_button, k_icon::k_icon, k_text::k_text, primitives::button}, KobelRootMessage};
+use crate::{widget::{k_button::{k_button, KobelShellButtonType}, k_icon::k_icon, k_text::k_text, primitives::button}, KobelRootMessage};
 
 use crate::{state::KobelShellState};
 
 pub static BAR_DEFAULT_HEIGHT: i32 = 36;
 pub static BAR_DEFAULT_MARGIN: i32 = 4;
+pub static BAR_DEFAULT_PADDING: f32 = 4.0;
 pub static BAR_DEFAULT_RADII: f32 = 14.0;
 
 #[derive(Debug, Clone)]
@@ -39,7 +40,7 @@ impl KobelBar {
                 left: state.bar_margin,
                 right: state.bar_margin,
             },
-            keyboard_interactivity: KeyboardInteractivity::Exclusive,
+            keyboard_interactivity: KeyboardInteractivity::OnDemand,
             pointer_interactivity: true,
             ..Default::default()
         });
@@ -58,6 +59,8 @@ impl KobelBar {
     }
 
     pub fn view(&self) -> Element<KobelRootMessage, iced::Theme, iced::Renderer> {
+        let button_radii = self.state.bar_radii - self.state.bar_padding;
+
         let time_str = self.state.now
             .read()
             .unwrap()
@@ -66,7 +69,8 @@ impl KobelBar {
 
         let left_ui = column![
             row![
-                k_button(&self.state, k_icon(&self.state, "logo.svg")),
+                k_button(&self.state, k_icon(&self.state, "logo.svg"))
+                    .radii(button_radii),
             ]
                 .spacing(8)
                 .align_y(iced::Alignment::Center)
@@ -76,6 +80,7 @@ impl KobelBar {
 
         let clock_ui = column![
             k_button(&self.state, k_text(&self.state, time_str).bold(true))
+                .radii(button_radii)
         ]
             .spacing(8)
             .align_x(iced::Alignment::Center)
@@ -91,7 +96,7 @@ impl KobelBar {
             .map(|r| k_icon(&self.state, r).into())
             .collect::<Vec<_>>();
 
-        let actions_ui= container(row![
+        let mut actions_row = Row::from_vec(vec![
             k_button(&self.state, row![
                 iced::widget::image("/home/kieran/Downloads/barking.jpg")
                     .width(iced::Length::Fixed(24.0))
@@ -102,11 +107,55 @@ impl KobelBar {
             ]
                 .spacing(8)
                 .align_y(iced::Alignment::Center)
-            ),
-            k_button(&self.state, k_icon(&self.state, "/home/kieran/.config/discordcanary/0.0.721/modules/discord_desktop_core/asar/app/images/systemtray/linux/tray-unread.png")),
-            k_button(&self.state, k_text(&self.state, "en₁").bold(true)),
+            )
+                .radii(button_radii)
+                .into(),
+            k_button(&self.state, k_icon(&self.state, "/home/kieran/.config/discordcanary/0.0.721/modules/discord_desktop_core/asar/app/images/systemtray/linux/tray-unread.png"))
+                .radii(button_radii)
+                .into(),
+            k_button(&self.state, k_text(&self.state, "en₁").bold(true))
+                .radii(button_radii)
+                .into(),
             k_button(&self.state, Row::from_vec(action_icons).spacing(12))
-        ]
+                .radii(button_radii)
+                .into(),
+            k_button(&self.state, k_icon(&self.state, "search.svg")
+                .color(if *self.state.search_panel_visible.read().unwrap() {
+                    Some(Color::WHITE)
+                } else {
+                    None
+                })
+            )
+                .radii(button_radii)
+                .button_type(if *self.state.search_panel_visible.read().unwrap() {
+                    KobelShellButtonType::Primary
+                } else {
+                    KobelShellButtonType::Normal
+                })
+                .on_press(KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Debug(crate::panel::debug::KobelDebugMessage::Toggle)))
+                .into()
+        ]);
+
+        if cfg!(debug_assertions) {
+            actions_row = actions_row.push(
+                k_button(&self.state, k_icon(&self.state, "inspector.svg")
+                    .color(if *self.state.debug_panel_visible.read().unwrap() {
+                        Some(Color::WHITE)
+                    } else {
+                        None
+                    })
+                )
+                    .radii(button_radii)
+                    .button_type(if *self.state.debug_panel_visible.read().unwrap() {
+                        KobelShellButtonType::Primary
+                    } else {
+                        KobelShellButtonType::Normal
+                    })
+                    .on_press(KobelRootMessage::Panel(crate::panel::KobelPanelMessage::Debug(crate::panel::debug::KobelDebugMessage::Toggle)))
+            );
+        }
+
+        let actions_ui= container(actions_row
             .width(iced::Length::Shrink)
             .spacing(4)
         )
@@ -118,7 +167,7 @@ impl KobelBar {
             .width(iced::Length::Fill)
             .height(iced::Length::Fill)
             .align_y(iced::Alignment::Center)
-            .padding(Padding::from([4, 4]));
+            .padding(self.state.bar_padding);
 
         container(bar_row)
             .width(iced::Length::Fill)

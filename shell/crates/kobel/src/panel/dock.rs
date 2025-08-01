@@ -1,9 +1,14 @@
 use std::{path::PathBuf, sync::Arc};
 
 use iced::{core::window, platform_specific::shell::commands::{layer_surface::get_layer_surface, subsurface::{Anchor, KeyboardInteractivity, Layer}}, widget::{column, container, row, svg, text, tooltip, vertical_rule}, Background, Color, Element, Task};
-use iced_runtime::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
+use iced_runtime::platform_specific::wayland::layer_surface::{IcedMargin, SctkLayerSurfaceSettings};
 
-use crate::{state::KobelShellState, widget::primitives::button, KobelRootMessage};
+use crate::{panel::dock, state::KobelShellState, util::debug::debug_border_style_or_default, widget::{k_button::{k_button, KobelShellButtonMode}, k_icon::k_icon, k_text::k_text, primitives::button}, KobelRootMessage};
+
+pub static DOCK_DEFAULT_HEIGHT: i32 = 84;
+pub static DOCK_DEFAULT_MARGIN: i32 = 8;
+pub static DOCK_DEFAULT_PADDING: f32 = 6.0;
+pub static DOCK_DEFAULT_RADII: f32 = 24.0;
 
 #[derive(Debug, Clone)]
 pub enum KobelDockMessage {
@@ -20,14 +25,22 @@ impl KobelDock {
     pub fn new(state: Arc<KobelShellState>) -> (Self, Task<KobelRootMessage>) {
         let id = window::Id::unique();
 
+        let dock_height = state.dock_height + (state.dock_margin * 2);
+
         let surface = get_layer_surface(SctkLayerSurfaceSettings {
             id,
             namespace: "kobelwm".to_string(),
             layer: Layer::Overlay,
             anchor: Anchor::BOTTOM | Anchor::LEFT | Anchor::RIGHT,
-            size: Some((None, Some(90))),
-            exclusive_zone: 90,
-            keyboard_interactivity: KeyboardInteractivity::Exclusive,
+            size: Some((None, Some(state.dock_height as u32))),
+            exclusive_zone: dock_height,
+            margin: IcedMargin {
+                top: state.dock_margin,
+                bottom: state.dock_margin,
+                left: state.dock_margin,
+                right: state.dock_margin,
+            },
+            keyboard_interactivity: KeyboardInteractivity::OnDemand,
             pointer_interactivity: true,
             ..Default::default()
         });
@@ -46,10 +59,8 @@ impl KobelDock {
     }
 
     pub fn view(&self) -> Element<KobelRootMessage> {
-        let dock_radii = 34.0;
-        let dock_padding = 8;
-        let dock_button_radii = dock_radii - dock_padding as f32;
-        let dock_button_icon_padding = 14;
+        let icon_size = (self.state.dock_height as f32 - (self.state.dock_padding * 2.0)) / self.state.icon_base_size;
+        let button_radii = self.state.dock_radii - self.state.dock_padding;
 
         let icons = vec![
             "/usr/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg",
@@ -68,19 +79,10 @@ impl KobelDock {
         let mut icons_ui = vec![];
 
         for icon in icons {
-            let icon_element: Element<KobelRootMessage> = if icon.extension().map_or(false, |ext| ext == "svg") {
-                svg(&icon)
-                    .width(iced::Length::Shrink)
-                    .height(iced::Length::Shrink)
-                    .content_fit(iced::ContentFit::Contain)
-                    .into()
-            } else {
-                iced::widget::image(&icon)
-                    .width(iced::Length::Shrink)
-                    .height(iced::Length::Shrink)
-                    .content_fit(iced::ContentFit::Contain)
-                    .into()
-            };
+            let icon_element: Element<KobelRootMessage> = k_icon(&self.state, icon.to_string_lossy().to_string())
+                .size(iced::Length::Shrink)
+                .symbolic(false)
+                .into();
 
             let tooltip_text = icon.file_name()
                 .unwrap_or_default()
@@ -89,32 +91,10 @@ impl KobelDock {
 
             icons_ui.push(
                 tooltip(
-                    button(container(icon_element)
-                        .width(iced::Length::Shrink)
-                        .height(iced::Length::Shrink)
-                        .align_y(iced::Alignment::Center)
-                    )
-                        .width(iced::Length::Shrink)
-                        .height(iced::Length::Shrink)
-                        .padding(dock_button_icon_padding)
-                        .style(move |_, status| button::Style {
-                            background: match status {
-                                crate::widget::primitives::button::Status::Pressed => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
-                                crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
-                                _ => Some(Background::Color(Color::TRANSPARENT)),
-                            },
-                            border: iced::Border {
-                                width: 0.0,
-                                radius: dock_button_radii.into(),
-                                color: Color::TRANSPARENT,
-                            },
-                            ..Default::default()
-                        })
-                        .on_press(KobelRootMessage::Test),
-                        text(tooltip_text)
-                            .font(self.state.font_bold)
-                            .size(14.6666)
-                            .color(self.state.shell_text_color),
+                    k_button(&self.state, icon_element)
+                        .radii(button_radii)
+                        .mode(KobelShellButtonMode::Iconic),
+                    k_text(&self.state, tooltip_text),
                     tooltip::Position::FollowCursor
                 )
             );
@@ -123,7 +103,7 @@ impl KobelDock {
         let mut dock_ui = row![
             
         ]
-            .spacing(4)
+            .spacing(self.state.dock_padding * 1.5)
             .width(iced::Length::Shrink)
             .height(iced::Length::Shrink);
 
@@ -131,73 +111,30 @@ impl KobelDock {
             dock_ui = dock_ui.push(icon_ui);
         }
 
-        dock_ui = dock_ui.push(vertical_rule(1.0));
+        // dock_ui = dock_ui.push(vertical_rule(1.0));
 
-        dock_ui = dock_ui.push(
-            container(
-                column![
-                    button(text("Kieran")
-                        .font(self.state.font_bold)
-                        .size(14.6666))
-                        .width(iced::Length::Shrink)
-                        .height(iced::Length::Shrink)
-                        .padding(dock_button_icon_padding)
-                        .style(move |_, status| button::Style {
-                            background: match status {
-                                crate::widget::primitives::button::Status::Pressed => Some(Background::Color(Color::from_rgb(0.2, 0.2, 0.2))),
-                                crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.05))),
-                                _ => Some(Background::Color(Color::TRANSPARENT)),
-                            },
-                            text_color: self.state.shell_text_color,
-                            border: iced::Border {
-                                width: 0.0,
-                                radius: dock_button_radii.into(),
-                                color: Color::TRANSPARENT,
-                            },
-                            ..Default::default()
-                        })
-                        .on_press(KobelRootMessage::Test),
-                    button(text("bingus")
-                        .font(self.state.font_bold)
-                        .size(14.6666))
-                        .width(iced::Length::Shrink)
-                        .height(iced::Length::Shrink)
-                        .padding(dock_button_icon_padding)
-                        .style(move |_, status| button::Style {
-                            background: match status {
-                                crate::widget::primitives::button::Status::Pressed => Some(Background::Color(Color::from_rgb(0.2, 0.2, 0.2))),
-                                crate::widget::primitives::button::Status::Hovered => Some(Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.05))),
-                                _ => Some(Background::Color(Color::TRANSPARENT)),
-                            },
-                            text_color: self.state.shell_text_color,
-                            border: iced::Border {
-                                width: 0.0,
-                                radius: dock_button_radii.into(),
-                                color: Color::TRANSPARENT,
-                            },
-                            ..Default::default()
-                        })
-                        .on_press(KobelRootMessage::Test)
-                ]   
-            ),
-        );
+        // dock_ui = dock_ui.push(
+        //     row![
+        //         k_button(&self.state, k_text(&self.state, "Kieran")),
+        //         k_button(&self.state, k_text(&self.state, "Bingus"))
+        //     ],
+        // );
 
-        container(column![container(row![dock_ui])
-            .padding(dock_padding)
+        container(container(row![dock_ui])
             .width(iced::Length::Shrink)
             .height(iced::Length::Fill)
             .align_x(iced::Alignment::Center)
             .align_y(iced::Alignment::Center)
+            .padding(self.state.dock_padding)
             .style(move |_| container::Style {
                 background: Some(self.state.shell_background.clone()),
                 text_color: Some(self.state.shell_text_color),
-                border: iced::Border {
-                    width: 3.0,
-                    radius: dock_radii.into(),
+                border: debug_border_style_or_default(&self.state, iced::Border {
+                    radius: self.state.dock_radii.into(),
                     ..Default::default()
-                },
+                }),
                 ..container::Style::default()
-            })]
+            })
         )
             .width(iced::Length::Fill)
             .height(iced::Length::Fill)

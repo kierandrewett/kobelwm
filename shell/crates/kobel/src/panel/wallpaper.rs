@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use iced::{core::window, platform_specific::shell::commands::{layer_surface::get_layer_surface, subsurface::{Anchor, KeyboardInteractivity, Layer}}, widget::{container, row}, window::Id, Background, Color, Element, Task};
+use iced::{core::window, platform_specific::shell::commands::{layer_surface::get_layer_surface, subsurface::{Anchor, KeyboardInteractivity, Layer}}, widget::{container, mouse_area, row}, window::Id, Background, Color, Element, Rectangle, Task};
 use iced_runtime::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
 
 use crate::{state::KobelShellState, KobelRootMessage};
@@ -39,7 +39,7 @@ impl KobelWallpaper {
             size: Some((None, None)),
             exclusive_zone: -1,
             keyboard_interactivity: KeyboardInteractivity::None,
-            pointer_interactivity: false,
+            pointer_interactivity: true,
             ..Default::default()
         });
 
@@ -115,15 +115,18 @@ impl KobelWallpaper {
                 .into()
         };
 
-        container(wallpaper_element)
-            .width(iced::Length::Fill)
-            .height(iced::Length::Fill)
-            .align_x(iced::Alignment::Center)
-            .align_y(iced::Alignment::Center)
-            .style(move |_| container::Style {
-                background: Some(Background::Color(Color::BLACK)),
-                ..container::Style::default()
-            })
+        mouse_area(
+            container(wallpaper_element)
+                .width(iced::Length::Fill)
+                .height(iced::Length::Fill)
+                .align_x(iced::Alignment::Center)
+                .align_y(iced::Alignment::Center)
+                .style(move |_| container::Style {
+                    background: Some(Background::Color(Color::BLACK)),
+                    ..container::Style::default()
+                })
+        )
+            .on_right_press(KobelRootMessage::OpenContextMenu { width: 250.0, height: 187.0 })
             .into()
     }
 

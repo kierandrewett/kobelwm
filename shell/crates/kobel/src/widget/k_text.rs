@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use iced::{widget::{svg, text}, Element};
+use iced::{widget::{container, svg, text}, Element};
 
-use crate::{state::KobelShellState, KobelRootMessage};
+use crate::{state::KobelShellState, util::debug::debug_border_style_or_default, KobelRootMessage};
 
 #[derive(Debug)]
 pub struct KobelShellText<'a> {
@@ -48,9 +48,15 @@ impl<'a> KobelShellText<'a> {
 
         let font_size = self.size * self.state.font_base_size;
 
-        text(self.contents.clone())
-            .font(font)
-            .size(font_size)
+        container(
+            text(self.contents.clone())
+                .font(font)
+                .size(font_size)
+        )
+            .style(move |_| container::Style {
+                border: debug_border_style_or_default(&self.state, iced::Border::default()),
+                ..Default::default()
+            })
             .into()
     }
 }
